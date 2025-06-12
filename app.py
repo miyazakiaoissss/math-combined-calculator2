@@ -11,7 +11,7 @@ def preprocess_expression(expr):
     return expr.replace("^", "**")
 
 def regular_triangle(x_center, y_center, size):
-    # 正三角形（頂点が上、底辺が下）
+    # 正三角形の頂点座標（頂点上向き）
     h = size * (3 ** 0.5) / 2
     return [
         (x_center, y_center + h / 2),
@@ -27,24 +27,20 @@ mode = st.radio("計算の順番を選択してください", ["add_then_mul", "
 
 expr_str = st.text_input("入れる数や式を入力してください（例: 7, 3*a, 2+5）")
 
-fig, ax = plt.subplots(figsize=(7, 1.5))
-ax.set_xlim(0, 7)
-ax.set_ylim(0, 2)
+fig, ax = plt.subplots(figsize=(8, 1.8))
+ax.set_xlim(0, 8)
+ax.set_ylim(0, 2.2)
 ax.axis('off')
 
 y = 1.0
 rect_w, rect_h = 1.0, 0.8
-tri_size = rect_w
+tri_size = rect_w  # 正三角形の一辺の長さ
 
-if mode == "add_then_mul":
-    rect_x = 2.5
-    tri_x = 4.5
-else:
-    tri_x = 2.5
-    rect_x = 4.5
-
-input_x = 0.8
-result_x = 6.2
+# 各図形のx座標設定（矢印を含めた間隔調整）
+input_x = 1.0
+rect_x = 3.0 if mode == "add_then_mul" else 5.0
+tri_x = 5.0 if mode == "add_then_mul" else 3.0
+result_x = 7.0
 
 # 計算結果と入力表示の初期化
 result_display = "0"
@@ -65,7 +61,7 @@ if expr_str:
         result_display = str(res_int)
 
         expr_val = expr.subs(fixed_values).evalf()
-        input_display = str(int(expr_val))  # 小数切り捨て必須
+        input_display = str(int(expr_val))  # 小数切り捨て
 
     except Exception:
         result_display = "エラー"
@@ -85,34 +81,34 @@ ax.text(rect_x, y, rect_label, ha='center', va='center', fontsize=18, fontweight
 tri_points, tri_h = regular_triangle(tri_x, y, tri_size)
 tri = plt.Polygon(tri_points, closed=True, facecolor='lightgreen', edgecolor='black', linewidth=2)
 ax.add_patch(tri)
-# 三角形内の文字位置微調整
+# 三角形内の文字の位置調整（重なり回避）
 if mode == "add_then_mul":
-    # 2aの文字を三角形の中心より少し右にずらす
-    ax.text(tri_x + 0.1, y, "2a", ha='center', va='center', fontsize=18, fontweight='bold', color="#006400")
+    ax.text(tri_x + tri_size * 0.17, y - 0.05, "2a", ha='center', va='center', fontsize=18, fontweight='bold', color="#006400")
 else:
-    ax.text(tri_x, y, "a", ha='center', va='center', fontsize=18, fontweight='bold', color="#006400")
+    ax.text(tri_x, y - 0.05, "a", ha='center', va='center', fontsize=18, fontweight='bold', color="#006400")
 
 # 矢印描画関数
 def draw_arrow(ax, start_x, end_x, y, width=3):
     ax.annotate("", xy=(end_x, y), xytext=(start_x, y),
                 arrowprops=dict(arrowstyle="->", linewidth=width, color="#333333"))
 
-# 追加した矢印：図形の左→図形の中心、図形の中心→図形の右
-arrow_offset = 0.2
-if mode == "add_then_mul":
-    # 四角の左→四角の中心
-    draw_arrow(ax, rect_x - rect_w / 2 - arrow_offset, rect_x - rect_w / 2 + 0.05, y)
-    # 四角の右→三角の左
-    draw_arrow(ax, rect_x + rect_w / 2 + 0.05, tri_x - tri_size / 2 - 0.05, y)
-    # 三角の右→三角の右端＋offset
-    draw_arrow(ax, tri_x + tri_size / 2 + 0.05, tri_x + tri_size / 2 + arrow_offset, y)
-else:
-    # 三角の左→三角の中心
-    draw_arrow(ax, tri_x - tri_size / 2 - arrow_offset, tri_x - tri_size / 2 + 0.05, y)
-    # 三角の右→四角の左
-    draw_arrow(ax, tri_x + tri_size / 2 + 0.05, rect_x - rect_w / 2 - 0.05, y)
-    # 四角の右→四角の右端＋offset
-    draw_arrow(ax, rect_x + rect_w / 2 + 0.05, rect_x + rect_w / 2 + arrow_offset, y)
+arrow_len = 0.8  # 矢印の長さ（固定）
+
+# 四角の左矢印
+draw_arrow(ax, rect_x - rect_w / 2 - arrow_len, rect_x - rect_w / 2, y)
+# 四角の右矢印→三角の左矢印
+draw_arrow(ax, rect_x + rect_w / 2, tri_x - tri_size / 2, y)
+# 三角の右矢印
+draw_arrow(ax, tri_x + tri_size / 2, tri_x + tri_size / 2 + arrow_len, y)
+
+# 三角→四角モードの矢印も同様に描画
+if mode == "mul_then_add":
+    # 三角の左矢印
+    draw_arrow(ax, tri_x - tri_size / 2 - arrow_len, tri_x - tri_size / 2, y)
+    # 三角の右矢印→四角の左矢印
+    draw_arrow(ax, tri_x + tri_size / 2, rect_x - rect_w / 2, y)
+    # 四角の右矢印
+    draw_arrow(ax, rect_x + rect_w / 2, rect_x + rect_w / 2 + arrow_len, y)
 
 # 結果数字表示（右端）
 ax.text(result_x, y, result_display, ha='center', va='center', fontsize=20, fontweight='bold', color="#444")
