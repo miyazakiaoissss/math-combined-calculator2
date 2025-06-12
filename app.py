@@ -1,91 +1,80 @@
 import streamlit as st
-import sympy as sp
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+from sympy import sympify, expand
+import re
 
-st.set_page_config(layout="centered")
+# 定数
+fixed_values = {"a": 3, "b": 2}
 
-st.title("図形を使った計算")
+def preprocess_expression(expr):
+    expr = re.sub(r'(\d)([a-zA-Z])', r'\1*\2', expr)
+    expr = re.sub(r'(\d)\(', r'\1*(', expr)
+    return expr.replace("^", "**")
 
-# タブ
-mode = st.radio("計算の順序を選んでください", ("四角 → 三角", "三角 → 四角"))
-
-# 入力フィールド
-user_input = st.text_input("入れる数", "")
-
-# 定数定義
-a_val = 3
-b_val = 2
-
-# 変数
-a, b = sp.symbols('a b')
-
-# 結果の初期化
-result_display = ""
-
-# 計算と図形内容の設定
-if mode == "四角 → 三角":
-    shape1_label = "b"
-    shape2_label = "2a"
-    if user_input.strip():
-        try:
-            input_expr = sp.sympify(user_input)
-            result_expr = (input_expr + b_val) * (2 * a_val)
-            result_display = str(sp.simplify(result_expr))
-        except Exception as e:
-            result_display = f"エラー: {e}"  # 必要なら空文字にしてもよい
-else:
-    shape1_label = "a"
-    shape2_label = "-3b"
-    if user_input.strip():
-        try:
-            input_expr = sp.sympify(user_input)
-            result_expr = (a_val * input_expr) + (-3 * b_val)
-            result_display = str(sp.simplify(result_expr))
-        except Exception as e:
-            result_display = f"エラー: {e}"
-
-# 描画関数
-def draw_diagram():
-    fig, ax = plt.subplots(figsize=(8, 3))  # サイズを拡大
-    ax.set_xlim(0, 600)
-    ax.set_ylim(0, 200)
-    ax.set_aspect('equal')
+# 図形描画関数
+def draw_shapes(mode):
+    fig, ax = plt.subplots(figsize=(6, 2))
+    y = 0.5
+    ax.set_xlim(0, 6)
+    ax.set_ylim(0, 1)
     ax.axis('off')
 
-    if mode == "四角 → 三角":
-        rect = patches.Rectangle((60, 100), 60, 40, facecolor='lightblue', edgecolor='black')
+    if mode == "add_then_mul":
+        # 四角（b）
+        rect = plt.Rectangle((1, y - 0.2), 0.8, 0.4, color='lightblue')
         ax.add_patch(rect)
-        ax.text(90, 120, shape1_label, ha='center', va='center', fontsize=14)
+        ax.text(1.4, y, "b", ha='center', va='center', fontsize=12)
 
-        ax.annotate("", xy=(150, 120), xytext=(120, 120), arrowprops=dict(arrowstyle="->", linewidth=2))
-
-        triangle = patches.Polygon([[200, 140], [160, 100], [240, 100]], closed=True, facecolor='lightgreen', edgecolor='black')
+        # 三角（2a）
+        triangle = plt.Polygon([[3, y - 0.2], [2.6, y + 0.2], [3.4, y + 0.2]], color='lightgreen')
         ax.add_patch(triangle)
-        ax.text(200, 120, shape2_label, ha='center', va='center', fontsize=14)
+        ax.text(3, y, "2a", ha='center', va='center', fontsize=12)
 
-        ax.annotate("", xy=(290, 120), xytext=(250, 120), arrowprops=dict(arrowstyle="->", linewidth=2))
-
-        if result_display:
-            ax.text(310, 120, result_display, ha='left', va='center', fontsize=14)
-
+        # 矢印
+        ax.annotate("", xy=(0.9, y), xytext=(0.3, y), arrowprops=dict(arrowstyle="->"))
+        ax.annotate("", xy=(2.5, y), xytext=(1.9, y), arrowprops=dict(arrowstyle="->"))
+        ax.annotate("", xy=(4.5, y), xytext=(3.5, y), arrowprops=dict(arrowstyle="->"))
     else:
-        triangle = patches.Polygon([[60, 140], [20, 100], [100, 100]], closed=True, facecolor='lightgreen', edgecolor='black')
+        # 三角（a）
+        triangle = plt.Polygon([[1.4, y - 0.2], [1, y + 0.2], [1.8, y + 0.2]], color='lightgreen')
         ax.add_patch(triangle)
-        ax.text(60, 120, shape1_label, ha='center', va='center', fontsize=14)
+        ax.text(1.4, y, "a", ha='center', va='center', fontsize=12)
 
-        ax.annotate("", xy=(150, 120), xytext=(100, 120), arrowprops=dict(arrowstyle="->", linewidth=2))
-
-        rect = patches.Rectangle((160, 100), 60, 40, facecolor='lightblue', edgecolor='black')
+        # 四角（-3b）
+        rect = plt.Rectangle((3, y - 0.2), 0.8, 0.4, color='lightblue')
         ax.add_patch(rect)
-        ax.text(190, 120, shape2_label, ha='center', va='center', fontsize=14)
+        ax.text(3.4, y, "-3b", ha='center', va='center', fontsize=12)
 
-        ax.annotate("", xy=(270, 120), xytext=(220, 120), arrowprops=dict(arrowstyle="->", linewidth=2))
+        # 矢印
+        ax.annotate("", xy=(0.9, y), xytext=(0.3, y), arrowprops=dict(arrowstyle="->"))
+        ax.annotate("", xy=(2.8, y), xytext=(2, y), arrowprops=dict(arrowstyle="->"))
+        ax.annotate("", xy=(4.8, y), xytext=(3.9, y), arrowprops=dict(arrowstyle="->"))
 
-        if result_display:
-            ax.text(290, 120, result_display, ha='left', va='center', fontsize=14)
+    return fig
 
-    st.pyplot(fig)
+# Streamlit UI
+st.title("図形と式の計算（Streamlit版）")
 
-# 描画実行
-draw_diagram()
+mode = st.radio("計算の順番を選んでください", ["add_then_mul", "mul_then_add"], format_func=lambda x: "四角→三角" if x=="add_then_mul" else "三角→四角")
+
+st.pyplot(draw_shapes(mode))
+
+expr_str = st.text_input("入れる数や式を入力してください", "")
+
+if st.button("計算"):
+    if not expr_str:
+        st.warning("式を入力してください")
+    else:
+        try:
+            expr = sympify(preprocess_expression(expr_str))
+            a, b = fixed_values["a"], fixed_values["b"]
+
+            if mode == "add_then_mul":
+                res = expand((expr + b) * (2 * a))
+            else:
+                res = expand(expr * a + (-3 * b))
+
+            res_num = res.subs(fixed_values)
+            st.success(f"結果：{res_num}")
+        except Exception as e:
+            st.error(f"エラー: {e}")
