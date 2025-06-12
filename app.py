@@ -14,8 +14,6 @@ def update_layout():
     update_canvas_positions()
 
 def update_canvas_positions():
-    global text_output
-
     canvas.delete("all")
 
     # 図形サイズ（縦は高さで揃える）
@@ -26,90 +24,98 @@ def update_canvas_positions():
 
     gap = 40  # 図形・矢印・数字の間の最小スペース（px）
 
-    # キャンバス横幅
-    canvas_width = 640
+    # Y座標は全要素の中心を合わせる
+    center_y = 100
 
     # 入力数字のX座標（左端より少し内側に）
     input_x = 60
 
-    # 図形のX座標（左から順に配置）
-    # 四角形と三角形の幅は半分ずつ考慮して間隔を空ける
-    # 入力数字 → 四角or三角 → 矢印 → 三角or四角 → 矢印 → 結果数字
-    # modeによって並び順変わるので分岐
-
-    # 半幅
     rect_half_w = rect_width / 2
     tri_half_w = tri_side / 2
 
-    # Y座標は全要素の中心を合わせる
-    center_y = 100
-
+    # モードによって図形の順序を設定
     if mode.get() == "add_then_mul":
-        # 四角形→三角形の順
-        rect_x = input_x + rect_half_w + gap
-        tri_x = rect_x + rect_half_w + tri_half_w + gap
+        # 順序: 入力 → 四角形 → 三角形 → 結果
+        first_shape = "rect"
+        second_shape = "tri"
     else:
-        # 三角形→四角形の順
-        tri_x = input_x + tri_half_w + gap
-        rect_x = tri_x + tri_half_w + rect_half_w + gap
+        # 順序: 入力 → 三角形 → 四角形 → 結果
+        first_shape = "tri"
+        second_shape = "rect"
 
-    # 矢印の座標（始点・終点）
-    arrow1_start = input_x + 15  # 入力数字→図形左端の矢印少し内側スタート
-    arrow1_end = (rect_x if mode.get() == "add_then_mul" else tri_x) - (rect_half_w if mode.get() == "add_then_mul" else tri_half_w) - 5
+    # X座標配置
+    # 入力_xは固定
+    # 図形は均等間隔で配置するため、全体幅を計算して配置
+    total_width = rect_width + tri_side + gap * 4 + 100  # 余裕を持たせる
 
-    arrow2_start = (rect_x if mode.get() == "add_then_mul" else tri_x) + (rect_half_w if mode.get() == "add_then_mul" else tri_half_w) + 5
-    arrow2_end = (tri_x if mode.get() == "add_then_mul" else rect_x) - (tri_half_w if mode.get() == "add_then_mul" else rect_half_w) - 5
+    # それぞれのX座標を計算
+    first_x = input_x + 50 + gap  # 入力から少し離す
+    second_x = first_x + (rect_width if first_shape == "rect" else tri_side) + gap
+    result_x = second_x + (rect_width if second_shape == "rect" else tri_side) + gap + 40  # 結果はさらに離す
 
-    arrow3_start = (tri_x if mode.get() == "add_then_mul" else rect_x) + (tri_half_w if mode.get() == "add_then_mul" else rect_half_w) + 5
-    result_x = arrow3_start + gap
+    # 矢印の始点・終点座標
+    # 入力 → first_shape
+    arrow1_start = input_x + 15
+    arrow1_end = first_x - (rect_half_w if first_shape == "rect" else tri_half_w) - 5
 
-    # 入力数字（整数のみ許可）表示は左に
+    # first_shape → second_shape
+    arrow2_start = first_x + (rect_half_w if first_shape == "rect" else tri_half_w) + 5
+    arrow2_end = second_x - (rect_half_w if second_shape == "rect" else tri_half_w) - 5
+
+    # second_shape → 結果
+    arrow3_start = second_x + (rect_half_w if second_shape == "rect" else tri_half_w) + 5
+    arrow3_end = result_x - 15
+
+    # 入力数字表示（整数のみ許可）
     try:
         val = int(entry_input.get())
         input_text = str(val)
     except:
         input_text = ""
 
+    # 図形描画関数
+    def draw_rectangle(x, y, text):
+        canvas.create_rectangle(x - rect_half_w, y - rect_height/2,
+                                x + rect_half_w, y + rect_height/2,
+                                fill="lightblue")
+        canvas.create_text(x, y, text=text, font=("Arial", 16))
+
+    def draw_triangle(x, y, text):
+        top = y - tri_height / 2
+        left = x - tri_half_w
+        right = x + tri_half_w
+        bottom = y + tri_height / 2
+        canvas.create_polygon(
+            left, bottom,
+            right, bottom,
+            x, top,
+            fill="lightgreen"
+        )
+        canvas.create_text(x, y, text=text, font=("Arial", 16))
+
     # 図形描画
-    # 四角形
-    canvas.create_rectangle(rect_x - rect_half_w, center_y - rect_height/2,
-                            rect_x + rect_half_w, center_y + rect_height/2,
-                            fill="lightblue")
-    # 四角形内の文字
-    rect_text = "b" if mode.get() == "add_then_mul" else "-3b"
-    canvas.create_text(rect_x, center_y, text=rect_text, font=("Arial", 16))
+    if first_shape == "rect":
+        draw_rectangle(first_x, center_y, "b")
+    else:
+        draw_triangle(first_x, center_y, "2a")
 
-    # 三角形（正三角形で底辺が下、中心を(x,y)に）
-    # 頂点の3点座標計算
-    tri_top = center_y - tri_height / 2
-    tri_left = tri_x - tri_half_w
-    tri_right = tri_x + tri_half_w
-    tri_bottom = center_y + tri_height / 2
+    if second_shape == "rect":
+        draw_rectangle(second_x, center_y, "-3b")
+    else:
+        draw_triangle(second_x, center_y, "a")
 
-    canvas.create_polygon(
-        tri_left, tri_bottom,  # 左下
-        tri_right, tri_bottom, # 右下
-        tri_x, tri_top,        # 上頂点
-        fill="lightgreen"
-    )
-    tri_text = "2a" if mode.get() == "add_then_mul" else "a"
-    canvas.create_text(tri_x, center_y, text=tri_text, font=("Arial", 16))
-
-    # 矢印を3本描画（左右矢印も追加）
-    # 左端（入力→図形）
-    canvas.create_line(input_x + 15, center_y, arrow1_end, center_y,
+    # 矢印描画（すべて左から右）
+    canvas.create_line(arrow1_start, center_y, arrow1_end, center_y,
                        arrow=tk.LAST, width=2)
-    # 図形間
     canvas.create_line(arrow2_start, center_y, arrow2_end, center_y,
                        arrow=tk.LAST, width=2)
-    # 図形→結果数字
-    canvas.create_line(arrow3_start, center_y, result_x - 10, center_y,
+    canvas.create_line(arrow3_start, center_y, arrow3_end, center_y,
                        arrow=tk.LAST, width=2)
 
-    # 入力数表示（図形左の少し左）
+    # 入力数表示（左端）
     canvas.create_text(input_x, center_y, text=input_text, font=("Arial", 16))
 
-    # 結果計算＆表示（整数のみ）
+    # 計算結果（整数のみ表示）
     try:
         expr_val = int(entry_input.get())
         expr = sympify(expr_val)
@@ -120,16 +126,15 @@ def update_canvas_positions():
         else:
             res = expand(expr * a + (-3 * b))
 
-        # 結果を整数に丸めて表示
         res_val = int(res.evalf())
         canvas.create_text(result_x, center_y, text=str(res_val), font=("Arial", 16))
-    except Exception as e:
+    except Exception:
         canvas.create_text(result_x, center_y, text="エラー", font=("Arial", 16))
 
-# ウィンドウセットアップ
+# GUIセットアップ
 window = tk.Tk()
-window.title("図形と式の計算（横バランス調整済み）")
-window.geometry("700x250")
+window.title("図形と式の計算（矢印左→右修正版）")
+window.geometry("720x250")
 
 # 入力欄はキャンバス上部に独立
 input_frame = tk.Frame(window)
@@ -147,7 +152,7 @@ mode_frame.pack()
 
 tk.Button(window, text="計算", command=update_layout).pack(pady=5)
 
-canvas = tk.Canvas(window, width=640, height=200, bg="white")
+canvas = tk.Canvas(window, width=700, height=200, bg="white")
 canvas.pack(pady=10)
 
 window.mainloop()
