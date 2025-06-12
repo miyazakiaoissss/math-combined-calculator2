@@ -19,6 +19,10 @@ def regular_triangle(x_center, y_center, size):
         (x_center + size / 2, y_center - h / 2)
     ], h
 
+def draw_arrow(ax, start_x, end_x, y, width=3):
+    ax.annotate("", xy=(end_x, y), xytext=(start_x, y),
+                arrowprops=dict(arrowstyle="->", linewidth=width, color="#333333"))
+
 st.set_page_config(page_title="図形と式の計算", layout="centered")
 st.title("図形と式の計算（Streamlit版）")
 
@@ -81,18 +85,17 @@ ax.text(rect_x, y, rect_label, ha='center', va='center', fontsize=18, fontweight
 tri_points, tri_h = regular_triangle(tri_x, y, tri_size)
 tri = plt.Polygon(tri_points, closed=True, facecolor='lightgreen', edgecolor='black', linewidth=2)
 ax.add_patch(tri)
-# 三角形内の文字の位置調整（重なり回避）
+# 三角形内の文字の位置調整（辺ギリギリを避け中央寄り）
 if mode == "add_then_mul":
-    ax.text(tri_x + tri_size * 0.17, y - 0.05, "2a", ha='center', va='center', fontsize=18, fontweight='bold', color="#006400")
+    # 三角の中心から少し左にずらして中央に見える位置へ
+    text_x = tri_x - tri_size * 0.1
+    text_y = y - tri_h * 0.1
+    ax.text(text_x, text_y, "2a", ha='center', va='center', fontsize=18, fontweight='bold', color="#006400")
 else:
-    ax.text(tri_x, y - 0.05, "a", ha='center', va='center', fontsize=18, fontweight='bold', color="#006400")
+    ax.text(tri_x, y - tri_h * 0.1, "a", ha='center', va='center', fontsize=18, fontweight='bold', color="#006400")
 
-# 矢印描画関数
-def draw_arrow(ax, start_x, end_x, y, width=3):
-    ax.annotate("", xy=(end_x, y), xytext=(start_x, y),
-                arrowprops=dict(arrowstyle="->", linewidth=width, color="#333333"))
-
-arrow_len = 0.8  # 矢印の長さ（固定）
+# 矢印長さ（全て同じ）
+arrow_len = 0.8
 
 # 四角の左矢印
 draw_arrow(ax, rect_x - rect_w / 2 - arrow_len, rect_x - rect_w / 2, y)
