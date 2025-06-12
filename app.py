@@ -12,6 +12,7 @@ def preprocess_expression(expr):
 
 def regular_triangle(x_center, y_center, size):
     # 正三角形の頂点座標（頂点上向き）
+    # size は一辺の長さ
     h = size * (3 ** 0.5) / 2
     return [
         (x_center, y_center + h / 2),
@@ -38,9 +39,13 @@ ax.axis('off')
 
 y = 1.0
 rect_w, rect_h = 1.0, 0.8
-tri_size = rect_w  # 正三角形の一辺の長さ
 
-# 各図形のx座標設定（矢印を含めた間隔調整）
+# 三角形の辺の長さを四角より大きくして中央文字が被らないように調整
+tri_size = 1.2  # 少し大きくした
+tri_points, tri_h = regular_triangle(0, 0, tri_size)  # 一旦原点で計算
+# tri_h は高さなのでこれも使って y調整に使う
+
+# 各図形のx座標設定（矢印含め間隔調整）
 input_x = 1.0
 rect_x = 3.0 if mode == "add_then_mul" else 5.0
 tri_x = 5.0 if mode == "add_then_mul" else 3.0
@@ -81,22 +86,21 @@ ax.add_patch(rect)
 rect_label = "b" if mode == "add_then_mul" else "-3b"
 ax.text(rect_x, y, rect_label, ha='center', va='center', fontsize=18, fontweight='bold', color="#0D3B66")
 
-# 三角形描画
+# 三角形描画（y座標は真ん中基準なので調整）
 tri_points, tri_h = regular_triangle(tri_x, y, tri_size)
 tri = plt.Polygon(tri_points, closed=True, facecolor='lightgreen', edgecolor='black', linewidth=2)
 ax.add_patch(tri)
-# 三角形内の文字の位置調整（辺ギリギリを避け中央寄り）
-if mode == "add_then_mul":
-    # 三角の中心から少し左にずらして中央に見える位置へ
-    text_x = tri_x - tri_size * 0.1
-    text_y = y - tri_h * 0.1
-    ax.text(text_x, text_y, "2a", ha='center', va='center', fontsize=18, fontweight='bold', color="#006400")
-else:
-    ax.text(tri_x, y - tri_h * 0.1, "a", ha='center', va='center', fontsize=18, fontweight='bold', color="#006400")
 
-# 矢印長さ（全て同じ）
+# 三角形の中央に文字を置くため、y方向は三角形中心（y）を使う
+if mode == "add_then_mul":
+    ax.text(tri_x, y, "2a", ha='center', va='center', fontsize=18, fontweight='bold', color="#006400")
+else:
+    ax.text(tri_x, y, "a", ha='center', va='center', fontsize=18, fontweight='bold', color="#006400")
+
+# 矢印長さを統一
 arrow_len = 0.8
 
+# 矢印は図形端と矢印長さに合わせて位置をきちんと計算
 # 四角の左矢印
 draw_arrow(ax, rect_x - rect_w / 2 - arrow_len, rect_x - rect_w / 2, y)
 # 四角の右矢印→三角の左矢印
