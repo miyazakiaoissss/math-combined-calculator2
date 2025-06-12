@@ -1,62 +1,65 @@
-# app.py
-
 import streamlit as st
-from sympy import sympify, expand
-import re
+import sympy as sp
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
-# 固定値
-fixed_values = {"a": 3, "b": 2}
+st.set_page_config(layout="centered")
 
-def preprocess_expression(expr):
-    import re
-    expr = re.sub(r'(\d)([a-zA-Z])', r'\1*\2', expr)
-    expr = re.sub(r'(\d)\(', r'\1*(', expr)
-    expr = expr.replace("^", "**")
-    return expr
+st.title("図形を使った計算")
 
-def display_expression(expr):
-    return str(expr).replace("*", "")
+# 入力フィールド
+user_input = st.text_input("入れる数", "")
 
-# ページ設定
-st.set_page_config(page_title="図形と式の計算", layout="centered")
-st.title("図形と式の計算")
-st.write("図形に書かれた式に従って、もとの数や式を変形します。")
+# 定数定義
+a_val = 3
+b_val = 2
 
-# 操作モード
-mode = st.radio(
-    "計算の順番を選んでください：",
-    ("四角 → 三角（+して×）", "三角 → 四角（×して+）")
-)
+# 計算（三角→四角→結果）
+try:
+    user_expr = sp.sympify(user_input)
+    a, b = sp.symbols('a b')
+    triangle_expr = a
+    rect_expr = -3 * b
 
-# 入力
-input_str = st.text_input("もとの数や式を入力してください：", key="input_expr")
+    # 代入して数値結果を計算
+    result_expr = (triangle_expr.subs({a: a_val}) * user_expr) + rect_expr.subs({b: b_val})
+    result_simplified = sp.simplify(result_expr)
 
-# 図形内の固定式を表示
-if mode == "四角 → 三角（+して×）":
-    st.markdown("#### 四角に入っている式：`b`")
-    st.markdown("#### 三角に入っている式：`2a`")
-else:
-    st.markdown("#### 三角に入っている式：`a`")
-    st.markdown("#### 四角に入っている式：`-3b`")
+    # 結果を文字列に
+    result_display = str(result_simplified)
+except Exception as e:
+    result_display = f"エラー: {e}"
 
-# 計算ボタン
-if st.button("計算する"):
-    try:
-        if not input_str.strip():
-            st.error("入力が空です。")
-        else:
-            input_expr = sympify(preprocess_expression(input_str))
+# 描画関数
+def draw_diagram():
+    fig, ax = plt.subplots(figsize=(6, 2))
+    ax.set_xlim(0, 600)
+    ax.set_ylim(0, 200)
+    ax.set_aspect('equal')
+    ax.axis('off')
 
-            a = fixed_values["a"]
-            b = fixed_values["b"]
+    # 三角形（左）
+    triangle = patches.Polygon([[100, 140], [60, 100], [140, 100]], closed=True, facecolor='lightgreen', edgecolor='black')
+    ax.add_patch(triangle)
+    ax.text(100, 120, "a", ha='center', va='center', fontsize=14)
 
-            if mode == "四角 → 三角（+して×）":
-                result = expand((input_expr + b) * (2 * a))
-            else:
-                result = expand(input_expr * a + (-3 * b))
+    # 矢印1
+    ax.annotate("", xy=(200, 120), xytext=(150, 120),
+                arrowprops=dict(arrowstyle="->", linewidth=2))
 
-            result_num = result.subs(fixed_values)
+    # 四角形（中央）
+    rect = patches.Rectangle((240, 100), 60, 40, facecolor='lightblue', edgecolor='black')
+    ax.add_patch(rect)
+    ax.text(270, 120, "-3b", ha='center', va='center', fontsize=14)
 
-            st.success(f"結果： {result_num}")
-    except Exception as e:
-        st.error(f"エラーが発生しました: {e}")
+    # 矢印2
+    ax.annotate("", xy=(370, 120), xytext=(320, 120),
+                arrowprops=dict(arrowstyle="->", linewidth=2))
+
+    # 結果
+    ax.text(400, 120, result_display, ha='left', va='center', fontsize=14)
+
+    st.pyplot(fig)
+
+# 描画実行
+draw_diagram()
