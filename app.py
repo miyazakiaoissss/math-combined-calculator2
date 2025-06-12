@@ -27,39 +27,23 @@ def draw_flow_diagram(mode):
     y = 1.0
     shape_size = 1.0
 
-    # 四角と三角の位置
     if mode == "add_then_mul":
-        # 四角
         rect = plt.Rectangle((2.0, y - 0.3), 0.6, 0.6, color='lightblue')
         ax.add_patch(rect)
         ax.text(2.3, y, "b", ha='center', va='center', fontsize=12)
-
-        # 矢印
         ax.annotate("", xy=(2.7, y), xytext=(2.6, y), arrowprops=dict(arrowstyle="->"))
-
-        # 三角
         triangle = plt.Polygon(regular_triangle(3.3, y, shape_size), color='lightgreen')
         ax.add_patch(triangle)
         ax.text(3.3, y, "2a", ha='center', va='center', fontsize=12)
-
-        # 矢印
         ax.annotate("", xy=(3.9, y), xytext=(3.7, y), arrowprops=dict(arrowstyle="->"))
-
     else:
-        # 三角
         triangle = plt.Polygon(regular_triangle(2.1, y, shape_size), color='lightgreen')
         ax.add_patch(triangle)
         ax.text(2.1, y, "a", ha='center', va='center', fontsize=12)
-
-        # 矢印
         ax.annotate("", xy=(2.7, y), xytext=(2.4, y), arrowprops=dict(arrowstyle="->"))
-
-        # 四角
         rect = plt.Rectangle((3.0, y - 0.3), 0.6, 0.6, color='lightblue')
         ax.add_patch(rect)
         ax.text(3.3, y, "-3b", ha='center', va='center', fontsize=12)
-
-        # 矢印
         ax.annotate("", xy=(3.6, y), xytext=(3.4, y), arrowprops=dict(arrowstyle="->"))
 
     return fig
@@ -74,16 +58,15 @@ input_col, _ = st.columns([2, 5])
 with input_col:
     expr_str = st.text_input("入れる数や式", "")
 
-# 図形と「入れる数」「結果」の横並び表示用カラム
-left_col, center_col, right_col = st.columns([1, 3, 1])
-
-with center_col:
-    st.pyplot(draw_flow_diagram(mode))
+left_col, center_col, right_col = st.columns([1, 4, 2])
 
 with left_col:
     if expr_str:
-        st.markdown(f"**入れる数**")
-        st.write(expr_str)
+        st.markdown("### 入れる数")
+        st.markdown(f"<div style='display:flex;align-items:center;height:100%;'>{expr_str}</div>", unsafe_allow_html=True)
+
+with center_col:
+    st.pyplot(draw_flow_diagram(mode))
 
 with right_col:
     if expr_str:
@@ -96,9 +79,9 @@ with right_col:
             else:
                 res = expand(expr * a + (-3 * b))
 
-            res_num = res.subs(fixed_values)
+            res_num = res.subs(fixed_values).evalf()
 
-            st.markdown(f"**結果**")
-            st.success(f"{res_num}")
+            st.markdown("### 結果")
+            st.markdown(f"<div style='display:flex;align-items:center;height:100%;font-weight:bold;font-size:20px;'>{res_num}</div>", unsafe_allow_html=True)
         except Exception:
             st.error("入力に誤りがあります")
