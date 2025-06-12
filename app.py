@@ -1,5 +1,4 @@
-import streamlit as st
-import matplotlib.pyplot as plt
+import tkinter as tk
 from sympy import sympify, expand
 import re
 
@@ -10,124 +9,145 @@ def preprocess_expression(expr):
     expr = re.sub(r'(\d)\(', r'\1*(', expr)
     return expr.replace("^", "**")
 
-def regular_triangle(x_center, y_center, side_length):
-    # 正三角形の頂点座標（頂点上向き）
-    h = side_length * (3 ** 0.5) / 2
-    return [
-        (x_center, y_center + h / 2),       # 頂点上
-        (x_center - side_length / 2, y_center - h / 2),  # 左下
-        (x_center + side_length / 2, y_center - h / 2)   # 右下
-    ], h
+def update_layout():
+    canvas.delete("all")
+    update_canvas_positions()
 
-def draw_arrow(ax, start_x, end_x, y, width=3):
-    ax.annotate("", xy=(end_x, y), xytext=(start_x, y),
-                arrowprops=dict(arrowstyle="->", linewidth=width, color="#333333"))
+def update_canvas_positions():
+    global text_output
 
-st.set_page_config(page_title="図形と式の計算", layout="centered")
-st.title("図形と式の計算（Streamlit版）")
+    canvas.delete("all")
 
-mode = st.radio("計算の順番を選択してください", ["add_then_mul", "mul_then_add"],
-                format_func=lambda x: "四角→三角" if x == "add_then_mul" else "三角→四角")
+    # 図形サイズ（縦は高さで揃える）
+    rect_width = 80
+    rect_height = 60
+    tri_side = 80  # 正三角形の一辺（底辺）
+    tri_height = rect_height  # 高さを四角と同じに
 
-expr_str = st.text_input("入れる数や式を入力してください（例: 7, 3*a, 2+5）")
+    gap = 40  # 図形・矢印・数字の間の最小スペース（px）
 
-fig, ax = plt.subplots(figsize=(9, 2.2))
-ax.set_xlim(0, 9)
-ax.set_ylim(0, 2.5)
-ax.axis('off')
+    # キャンバス横幅
+    canvas_width = 640
 
-y_center = 1.2  # 図形の縦中心位置
+    # 入力数字のX座標（左端より少し内側に）
+    input_x = 60
 
-# 三角形の辺の長さを決定（ここから高さを算出）
-tri_side = 1.4
-tri_points, tri_height = regular_triangle(0, 0, tri_side)
+    # 図形のX座標（左から順に配置）
+    # 四角形と三角形の幅は半分ずつ考慮して間隔を空ける
+    # 入力数字 → 四角or三角 → 矢印 → 三角or四角 → 矢印 → 結果数字
+    # modeによって並び順変わるので分岐
 
-# 四角形の高さを三角形の高さに合わせる
-rect_height = tri_height
-rect_width = 1.0
+    # 半幅
+    rect_half_w = rect_width / 2
+    tri_half_w = tri_side / 2
 
-# 等間隔配置のためにx座標を決める（左から順に）
-# 左端：入力数字
-# 1つ目図形
-# 矢印1
-# 2つ目図形
-# 矢印2
-# 結果数字（右端）
-gap = 1.2  # 図形と矢印の間隔
-input_x = 1.0
-first_shape_x = input_x + gap
-arrow1_start = first_shape_x + rect_width / 2
-arrow1_end = arrow1_start + gap * 0.8
-second_shape_x = arrow1_end + gap
-arrow2_start = second_shape_x + tri_side / 2
-arrow2_end = arrow2_start + gap * 0.8
-result_x = arrow2_end + gap
+    # Y座標は全要素の中心を合わせる
+    center_y = 100
 
-# モードによって図形の順番を決定
-if mode == "add_then_mul":
-    rect_x = first_shape_x
-    tri_x = second_shape_x
-    rect_label = "b"
-    tri_label = "2a"
-else:
-    tri_x = first_shape_x
-    rect_x = second_shape_x
-    tri_label = "a"
-    rect_label = "-3b"
+    if mode.get() == "add_then_mul":
+        # 四角形→三角形の順
+        rect_x = input_x + rect_half_w + gap
+        tri_x = rect_x + rect_half_w + tri_half_w + gap
+    else:
+        # 三角形→四角形の順
+        tri_x = input_x + tri_half_w + gap
+        rect_x = tri_x + tri_half_w + rect_half_w + gap
 
-# 計算結果と入力表示の初期化
-result_display = "0"
-input_display = "0"
+    # 矢印の座標（始点・終点）
+    arrow1_start = input_x + 15  # 入力数字→図形左端の矢印少し内側スタート
+    arrow1_end = (rect_x if mode.get() == "add_then_mul" else tri_x) - (rect_half_w if mode.get() == "add_then_mul" else tri_half_w) - 5
 
-if expr_str:
+    arrow2_start = (rect_x if mode.get() == "add_then_mul" else tri_x) + (rect_half_w if mode.get() == "add_then_mul" else tri_half_w) + 5
+    arrow2_end = (tri_x if mode.get() == "add_then_mul" else rect_x) - (tri_half_w if mode.get() == "add_then_mul" else rect_half_w) - 5
+
+    arrow3_start = (tri_x if mode.get() == "add_then_mul" else rect_x) + (tri_half_w if mode.get() == "add_then_mul" else rect_half_w) + 5
+    result_x = arrow3_start + gap
+
+    # 入力数字（整数のみ許可）表示は左に
     try:
-        expr = sympify(preprocess_expression(expr_str))
+        val = int(entry_input.get())
+        input_text = str(val)
+    except:
+        input_text = ""
+
+    # 図形描画
+    # 四角形
+    canvas.create_rectangle(rect_x - rect_half_w, center_y - rect_height/2,
+                            rect_x + rect_half_w, center_y + rect_height/2,
+                            fill="lightblue")
+    # 四角形内の文字
+    rect_text = "b" if mode.get() == "add_then_mul" else "-3b"
+    canvas.create_text(rect_x, center_y, text=rect_text, font=("Arial", 16))
+
+    # 三角形（正三角形で底辺が下、中心を(x,y)に）
+    # 頂点の3点座標計算
+    tri_top = center_y - tri_height / 2
+    tri_left = tri_x - tri_half_w
+    tri_right = tri_x + tri_half_w
+    tri_bottom = center_y + tri_height / 2
+
+    canvas.create_polygon(
+        tri_left, tri_bottom,  # 左下
+        tri_right, tri_bottom, # 右下
+        tri_x, tri_top,        # 上頂点
+        fill="lightgreen"
+    )
+    tri_text = "2a" if mode.get() == "add_then_mul" else "a"
+    canvas.create_text(tri_x, center_y, text=tri_text, font=("Arial", 16))
+
+    # 矢印を3本描画（左右矢印も追加）
+    # 左端（入力→図形）
+    canvas.create_line(input_x + 15, center_y, arrow1_end, center_y,
+                       arrow=tk.LAST, width=2)
+    # 図形間
+    canvas.create_line(arrow2_start, center_y, arrow2_end, center_y,
+                       arrow=tk.LAST, width=2)
+    # 図形→結果数字
+    canvas.create_line(arrow3_start, center_y, result_x - 10, center_y,
+                       arrow=tk.LAST, width=2)
+
+    # 入力数表示（図形左の少し左）
+    canvas.create_text(input_x, center_y, text=input_text, font=("Arial", 16))
+
+    # 結果計算＆表示（整数のみ）
+    try:
+        expr_val = int(entry_input.get())
+        expr = sympify(expr_val)
         a, b = fixed_values["a"], fixed_values["b"]
 
-        if mode == "add_then_mul":
+        if mode.get() == "add_then_mul":
             res = expand((expr + b) * (2 * a))
         else:
             res = expand(expr * a + (-3 * b))
 
-        res_num = res.subs(fixed_values).evalf()
-        res_int = int(res_num)
-        result_display = str(res_int)
+        # 結果を整数に丸めて表示
+        res_val = int(res.evalf())
+        canvas.create_text(result_x, center_y, text=str(res_val), font=("Arial", 16))
+    except Exception as e:
+        canvas.create_text(result_x, center_y, text="エラー", font=("Arial", 16))
 
-        expr_val = expr.subs(fixed_values).evalf()
-        input_display = str(int(expr_val))  # 小数切り捨て
+# ウィンドウセットアップ
+window = tk.Tk()
+window.title("図形と式の計算（横バランス調整済み）")
+window.geometry("700x250")
 
-    except Exception:
-        result_display = "エラー"
-        input_display = expr_str
+# 入力欄はキャンバス上部に独立
+input_frame = tk.Frame(window)
+tk.Label(input_frame, text="入れる数（整数のみ）:").pack(side="left")
+entry_input = tk.Entry(input_frame, width=10)
+entry_input.pack(side="left")
+input_frame.pack(pady=10)
 
-# 入力数字表示（左端）
-ax.text(input_x, y_center, input_display, ha='center', va='center', fontsize=20, fontweight='bold', color="#444")
+mode = tk.StringVar(value="add_then_mul")
+mode_frame = tk.Frame(window)
+tk.Label(mode_frame, text="計算の順番：").pack(side="left")
+tk.Radiobutton(mode_frame, text="四角→三角", variable=mode, value="add_then_mul", command=update_layout).pack(side="left")
+tk.Radiobutton(mode_frame, text="三角→四角", variable=mode, value="mul_then_add", command=update_layout).pack(side="left")
+mode_frame.pack()
 
-# 四角形描画
-rect = plt.Rectangle((rect_x - rect_width / 2, y_center - rect_height / 2),
-                     rect_width, rect_height,
-                     facecolor='lightblue', edgecolor='black', linewidth=2)
-ax.add_patch(rect)
-ax.text(rect_x, y_center, rect_label, ha='center', va='center', fontsize=18, fontweight='bold', color="#0D3B66")
+tk.Button(window, text="計算", command=update_layout).pack(pady=5)
 
-# 三角形描画
-tri_points, tri_height = regular_triangle(tri_x, y_center, tri_side)
-tri = plt.Polygon(tri_points, closed=True, facecolor='lightgreen', edgecolor='black', linewidth=2)
-ax.add_patch(tri)
-ax.text(tri_x, y_center, tri_label, ha='center', va='center', fontsize=18, fontweight='bold', color="#006400")
+canvas = tk.Canvas(window, width=640, height=200, bg="white")
+canvas.pack(pady=10)
 
-# 矢印の描画（長さを統一しバランスよく）
-draw_arrow(ax, rect_x - rect_width / 2 - gap * 0.6, rect_x - rect_width / 2, y_center)  # 四角の左矢印
-draw_arrow(ax, rect_x + rect_width / 2, tri_x - tri_side / 2, y_center)                 # 四角→三角矢印
-draw_arrow(ax, tri_x + tri_side / 2, tri_x + tri_side / 2 + gap * 0.6, y_center)       # 三角の右矢印
-
-# 三角→四角モードの場合は矢印を入れ替える
-if mode == "mul_then_add":
-    draw_arrow(ax, tri_x - tri_side / 2 - gap * 0.6, tri_x - tri_side / 2, y_center)     # 三角の左矢印
-    draw_arrow(ax, tri_x + tri_side / 2, rect_x - rect_width / 2, y_center)              # 三角→四角矢印
-    draw_arrow(ax, rect_x + rect_width / 2, rect_x + rect_width / 2 + gap * 0.6, y_center)  # 四角の右矢印
-
-# 結果数字表示（右端）
-ax.text(result_x, y_center, result_display, ha='center', va='center', fontsize=20, fontweight='bold', color="#444")
-
-st.pyplot(fig)
+window.mainloop()
