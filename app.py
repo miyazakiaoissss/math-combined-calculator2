@@ -11,7 +11,6 @@ def preprocess_expression(expr):
     return expr.replace("^", "**")
 
 def regular_triangle(x_center, y_center, size):
-    # 正三角形の高さは size * sqrt(3)/2
     h = size * (3 ** 0.5) / 2
     return [
         (x_center, y_center + h/2),
@@ -25,20 +24,19 @@ def draw_flow_diagram(mode):
     ax.set_ylim(0, 2)
     ax.axis('off')
 
+    # 高さをすべて1.0に揃える
     y = 1.0
     rect_width = 0.8
-    # 四角形と高さを合わせる三角形の一辺サイズを計算
-    # 正三角形の高さ h = size * sqrt(3)/2 を四角形の高さ0.8に合わせるので
     tri_size = 0.8 / (3 ** 0.5 / 2)
 
     if mode == "add_then_mul":
-        # 四角形（縦高さ0.8）
+        # 四角形（高さ0.8、中心y=1.0）
         rect = plt.Rectangle((2.0, y - 0.4), rect_width, 0.8, color='lightblue', ec="black", lw=1.5)
         ax.add_patch(rect)
         ax.text(2.0 + rect_width/2, y, "b", ha='center', va='center', fontsize=14, fontweight='bold', color="#0D3B66")
 
-        # 矢印
         ax.annotate("", xy=(2.85, y), xytext=(2.75, y), arrowprops=dict(arrowstyle="->", lw=1.5, color="#333333"))
+        ax.text(2.8, y, "", ha='center', va='center')  # 矢印ラベルはなし（空テキスト）
 
         # 三角形
         triangle_points, tri_h = regular_triangle(3.5, y, tri_size)
@@ -47,6 +45,7 @@ def draw_flow_diagram(mode):
         ax.text(3.5, y, "2a", ha='center', va='center', fontsize=14, fontweight='bold', color="#006400")
 
         ax.annotate("", xy=(4.15, y), xytext=(4.0, y), arrowprops=dict(arrowstyle="->", lw=1.5, color="#333333"))
+        ax.text(4.1, y, "", ha='center', va='center')
 
     else:
         # 三角形
@@ -56,6 +55,7 @@ def draw_flow_diagram(mode):
         ax.text(2.1, y, "a", ha='center', va='center', fontsize=14, fontweight='bold', color="#006400")
 
         ax.annotate("", xy=(2.75, y), xytext=(2.4, y), arrowprops=dict(arrowstyle="->", lw=1.5, color="#333333"))
+        ax.text(2.6, y, "", ha='center', va='center')
 
         # 四角形
         rect = plt.Rectangle((3.0, y - 0.4), rect_width, 0.8, color='lightblue', ec="black", lw=1.5)
@@ -63,16 +63,9 @@ def draw_flow_diagram(mode):
         ax.text(3.0 + rect_width/2, y, "-3b", ha='center', va='center', fontsize=14, fontweight='bold', color="#0D3B66")
 
         ax.annotate("", xy=(3.75, y), xytext=(3.4, y), arrowprops=dict(arrowstyle="->", lw=1.5, color="#333333"))
+        ax.text(3.6, y, "", ha='center', va='center')
 
     return fig
-
-def format_result(value):
-    # 整数かどうか判定し、小数点以下不要なら整数表示に
-    if value == int(value):
-        return str(int(value))
-    else:
-        # 小数点第2位まで表示
-        return f"{value:.2f}"
 
 st.set_page_config(page_title="図形と式の計算", layout="centered")
 st.title("図形と式の計算（Streamlit版）")
@@ -80,15 +73,10 @@ st.title("図形と式の計算（Streamlit版）")
 mode = st.radio("計算の順番を選んでください", ["add_then_mul", "mul_then_add"],
                 format_func=lambda x: "四角→三角" if x == "add_then_mul" else "三角→四角")
 
-input_col, _ = st.columns([2, 5])
+input_col, _, center_col, _, right_col = st.columns([1.5, 0.2, 4, 0.2, 1.5])
+
 with input_col:
     expr_str = st.text_input("入れる数や式", "")
-
-left_col, center_col, right_col = st.columns([1, 4, 2])
-
-with left_col:
-    if expr_str:
-        st.markdown(f"<div style='display:flex;align-items:center;height:100%;font-size:16px;color:#444;'>{expr_str}</div>", unsafe_allow_html=True)
 
 with center_col:
     st.pyplot(draw_flow_diagram(mode))
@@ -105,8 +93,10 @@ with right_col:
                 res = expand(expr * a + (-3 * b))
 
             res_num = res.subs(fixed_values).evalf()
-            display_val = format_result(res_num)
 
-            st.markdown(f"<div style='display:flex;align-items:center;height:100%;font-size:20px;font-weight:bold;color:#111;'>{display_val}</div>", unsafe_allow_html=True)
+            # 結果は整数で表示
+            display_val = str(int(res_num))
+
+            st.markdown(f"<div style='display:flex;align-items:center;height:40px;font-size:20px;font-weight:bold;color:#111;'>{display_val}</div>", unsafe_allow_html=True)
         except Exception:
             st.error("入力に誤りがあります")
