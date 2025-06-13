@@ -47,72 +47,63 @@ def draw_diagram(mode, input_value, result_value):
 
     # 図形と処理式
     if mode == "add_then_mul":
-        # 四角形
-        rect = patches.Rectangle((pos1 - 40, center_y - 30), 80, 60, linewidth=1.5, edgecolor='black', facecolor='lightblue')
+        rect = patches.Rectangle((pos1 - 40, center_y - 30), 80, 60,
+                                 linewidth=1.5, edgecolor='black', facecolor='lightblue')
         ax.add_patch(rect)
         ax.text(pos1, center_y, "b", ha='center', va='center', fontsize=14)
 
-        # 三角形
-        triangle_height = 60
-        half_base = 50
-        triangle = patches.Polygon([[pos2, center_y + triangle_height/2],
-                                    [pos2 - half_base, center_y - triangle_height/2],
-                                    [pos2 + half_base, center_y - triangle_height/2]],
-                                    closed=True, facecolor='lightgreen', edgecolor='black', linewidth=1.5)
+        triangle = patches.Polygon([[pos2, center_y + 30],
+                                    [pos2 - 50, center_y - 30],
+                                    [pos2 + 50, center_y - 30]],
+                                   closed=True, facecolor='lightgreen', edgecolor='black', linewidth=1.5)
         ax.add_patch(triangle)
         ax.text(pos2, center_y, "2a", ha='center', va='center', fontsize=14)
     else:
-        # 三角形
-        triangle_height = 60
-        half_base = 50
-        triangle = patches.Polygon([[pos1, center_y + triangle_height/2],
-                                    [pos1 - half_base, center_y - triangle_height/2],
-                                    [pos1 + half_base, center_y - triangle_height/2]],
-                                    closed=True, facecolor='lightgreen', edgecolor='black', linewidth=1.5)
+        triangle = patches.Polygon([[pos1, center_y + 30],
+                                    [pos1 - 50, center_y - 30],
+                                    [pos1 + 50, center_y - 30]],
+                                   closed=True, facecolor='lightgreen', edgecolor='black', linewidth=1.5)
         ax.add_patch(triangle)
         ax.text(pos1, center_y, "a", ha='center', va='center', fontsize=14)
 
-        # 四角形
-        rect = patches.Rectangle((pos2 - 40, center_y - 30), 80, 60, linewidth=1.5, edgecolor='black', facecolor='lightblue')
+        rect = patches.Rectangle((pos2 - 40, center_y - 30), 80, 60,
+                                 linewidth=1.5, edgecolor='black', facecolor='lightblue')
         ax.add_patch(rect)
         ax.text(pos2, center_y, "-3b", ha='center', va='center', fontsize=14)
 
-    # 矢印
     arrow_props = dict(facecolor='black', shrink=0.05, width=1.2, headwidth=10)
     ax.annotate('', xy=(pos1 - 50, center_y), xytext=(pos_input + 50, center_y), arrowprops=arrow_props)
     ax.annotate('', xy=(pos2 - 50, center_y), xytext=(pos1 + 50, center_y), arrowprops=arrow_props)
     ax.annotate('', xy=(pos_result - 50, center_y), xytext=(pos2 + 50, center_y), arrowprops=arrow_props)
 
-    # 結果
     ax.text(pos_result, center_y, str(result_value), fontsize=14, ha='center', va='center')
-
     st.pyplot(fig)
 
 # --- Streamlit UI ---
 
 st.title("図形と式の計算")
 
-# モード選択
-mode = st.radio("計算の順番", ["add_then_mul", "mul_then_add"], format_func=lambda x: "四角形→三角形" if x == "add_then_mul" else "三角形→四角形")
+mode = st.radio("計算の順番", ["add_then_mul", "mul_then_add"],
+                format_func=lambda x: "四角形→三角形" if x == "add_then_mul" else "三角形→四角形")
 
-# 入力（縦並び＋横幅調整）
 st.markdown("**入れる数（整数のみ）**")
 input_value = st.number_input(label="", step=1, format="%d", key="input_value", label_visibility="collapsed")
+
+# 入力欄の横幅を30pxに設定
 st.markdown(
     """
     <style>
     section[data-testid="stNumberInput"] input {
-        width: 120px;
+        width: 30px !important;
+        text-align: center;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# 計算
 res, err = calculate(str(input_value), mode)
 
-# 描画
 if err:
     st.error(err)
 elif res is not None:
