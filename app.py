@@ -4,7 +4,6 @@ import matplotlib.patches as patches
 from sympy import sympify, expand
 import re
 
-# 定数設定
 fixed_values = {"a": 3, "b": 2}
 
 def preprocess_expression(expr):
@@ -83,20 +82,16 @@ st.title("図形と式の計算")
 mode = st.radio("計算の順番", ["add_then_mul", "mul_then_add"],
                 format_func=lambda x: "四角形→三角形" if x == "add_then_mul" else "三角形→四角形")
 
-# 入力ラベルとその下に小さい入力欄を表示
+# 入力ラベルとその下に短い入力欄
 st.markdown("**入れる数（整数のみ）**")
 input_value = st.number_input(label="", step=1, format="%d", key="input_value", label_visibility="collapsed")
 
-# 入力欄のCSSを調整：幅と左揃え
+# 幅だけ短くするCSS（約50px）
 st.markdown(
     """
     <style>
-    section[data-testid="stNumberInput"] {
-        width: 60px !important;
-        text-align: left !important;
-    }
     section[data-testid="stNumberInput"] input {
-        width: 60px !important;
+        width: 50px !important;
         text-align: center;
     }
     </style>
