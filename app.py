@@ -4,7 +4,6 @@ import matplotlib.patches as patches
 from sympy import sympify, expand
 import re
 
-# 定数設定
 fixed_values = {"a": 3, "b": 2}
 
 def preprocess_expression(expr):
@@ -35,17 +34,14 @@ def draw_diagram(mode, input_value, result_value):
     ax.set_ylim(0, 200)
     ax.axis('off')
 
-    # 四角形と三角形の位置
     pos_input = 50
     pos1 = 200
     pos2 = 400
     pos_result = 600
     center_y = 100
 
-    # 入力値
     ax.text(pos_input, center_y, str(input_value), fontsize=14, ha='center', va='center')
 
-    # 図形と処理式
     if mode == "add_then_mul":
         rect = patches.Rectangle((pos1 - 40, center_y - 30), 80, 60,
                                  linewidth=1.5, edgecolor='black', facecolor='lightblue')
@@ -86,15 +82,19 @@ st.title("図形と式の計算")
 mode = st.radio("計算の順番", ["add_then_mul", "mul_then_add"],
                 format_func=lambda x: "四角形→三角形" if x == "add_then_mul" else "三角形→四角形")
 
-st.markdown("**入れる数（整数のみ）**")
-input_value = st.number_input(label="", step=1, format="%d", key="input_value", label_visibility="collapsed")
+# 横幅を調整するためカラムで分割
+col1, col2 = st.columns([1, 1])
+with col1:
+    st.markdown("**入れる数（整数のみ）**")
+with col2:
+    input_value = st.number_input(label="", step=1, format="%d", key="input_value", label_visibility="collapsed")
 
-# 入力欄の横幅を30pxに設定
+# 入力欄の幅を明示的にCSSで短くする
 st.markdown(
     """
     <style>
     section[data-testid="stNumberInput"] input {
-        width: 30px !important;
+        width: 50px !important;
         text-align: center;
     }
     </style>
