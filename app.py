@@ -52,7 +52,7 @@ def draw_diagram(mode, input_value, result_value):
         ax.add_patch(rect)
         ax.text(pos1, center_y, "b", ha='center', va='center', fontsize=14)
 
-        # 三角形（正三角形で高さ＝四角形の高さ）
+        # 三角形
         triangle_height = 60
         half_base = 50
         triangle = patches.Polygon([[pos2, center_y + triangle_height/2],
@@ -77,7 +77,7 @@ def draw_diagram(mode, input_value, result_value):
         ax.add_patch(rect)
         ax.text(pos2, center_y, "-3b", ha='center', va='center', fontsize=14)
 
-    # 矢印（長さ統一）
+    # 矢印
     arrow_props = dict(facecolor='black', shrink=0.05, width=1.2, headwidth=10)
     ax.annotate('', xy=(pos1 - 50, center_y), xytext=(pos_input + 50, center_y), arrowprops=arrow_props)
     ax.annotate('', xy=(pos2 - 50, center_y), xytext=(pos1 + 50, center_y), arrowprops=arrow_props)
@@ -95,12 +95,19 @@ st.title("図形と式の計算")
 # モード選択
 mode = st.radio("計算の順番", ["add_then_mul", "mul_then_add"], format_func=lambda x: "四角形→三角形" if x == "add_then_mul" else "三角形→四角形")
 
-# 入力欄（横幅調整済み）
-col1, col2 = st.columns([1, 1])
-with col1:
-    st.markdown("**入れる数（整数のみ）**")
-with col2:
-    input_value = st.number_input(label="", step=1, format="%d")
+# 入力（縦並び＋横幅調整）
+st.markdown("**入れる数（整数のみ）**")
+input_value = st.number_input(label="", step=1, format="%d", key="input_value", label_visibility="collapsed")
+st.markdown(
+    """
+    <style>
+    section[data-testid="stNumberInput"] input {
+        width: 120px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # 計算
 res, err = calculate(str(input_value), mode)
