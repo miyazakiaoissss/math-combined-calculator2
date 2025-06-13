@@ -12,22 +12,26 @@ def preprocess_expression(expr):
     expr = re.sub(r'(\d)\(', r'\1*(', expr)
     return expr.replace("^", "**")
 
-def calculate(expr_str, mode):
-    expr_str = expr_str.strip()
-    if not expr_str:
-        return None, "式が入力されていません"
+def calculate(expr_value, mode):
+    try:
+        expr_str = preprocess_expression(str(expr_value))
+        expr = sympify(expr_str)
+    except Exception as e:
+        return None, f"数式の処理中にエラーが発生しました: {e}"
 
-    expr = sympify(preprocess_expression(expr_str))
     a, b = fixed_values["a"], fixed_values["b"]
 
-    if mode == "add_then_mul":
-        res = expand((expr + b) * (2 * a))
-    else:
-        res = expand(expr * a + (-3 * b))
+    try:
+        if mode == "add_then_mul":
+            res = expand((expr + b) * (2 * a))
+        else:
+            res = expand(expr * a + (-3 * b))
 
-    res_num = res.subs(fixed_values)
-    res_num = int(res_num) if res_num == int(res_num) else round(float(res_num), 2)
-    return res_num, None
+        res_num = res.subs(fixed_values)
+        res_num = int(res_num) if res_num == int(res_num) else round(float(res_num), 2)
+        return res_num, None
+    except Exception as e:
+        return None, f"計算中にエラーが発生しました: {e}"
 
 def draw_diagram(mode, input_value, result_value):
     fig, ax = plt.subplots(figsize=(8, 2))
@@ -35,7 +39,7 @@ def draw_diagram(mode, input_value, result_value):
     ax.set_ylim(0, 200)
     ax.axis('off')
 
-    # 四角形と三角形の位置
+    # 位置設定
     pos_input = 50
     pos1 = 200
     pos2 = 400
@@ -45,14 +49,13 @@ def draw_diagram(mode, input_value, result_value):
     # 入力値
     ax.text(pos_input, center_y, str(input_value), fontsize=14, ha='center', va='center')
 
-    # 図形と処理式
+    # 図形の描画
     if mode == "add_then_mul":
-        # 四角形
-        rect = patches.Rectangle((pos1 - 40, center_y - 30), 80, 60, linewidth=1.5, edgecolor='black', facecolor='lightblue')
+        rect = patches.Rectangle((pos1 - 40, center_y - 30), 80, 60, linewidth=1.5,
+                                 edgecolor='black', facecolor='lightblue')
         ax.add_patch(rect)
         ax.text(pos1, center_y, "b", ha='center', va='center', fontsize=14)
 
-        # 三角形（正三角形で高さ＝四角形の高さ）
         triangle_height = 60
         half_base = 50
         triangle = patches.Polygon([[pos2, center_y + triangle_height/2],
@@ -62,7 +65,6 @@ def draw_diagram(mode, input_value, result_value):
         ax.add_patch(triangle)
         ax.text(pos2, center_y, "2a", ha='center', va='center', fontsize=14)
     else:
-        # 三角形
         triangle_height = 60
         half_base = 50
         triangle = patches.Polygon([[pos1, center_y + triangle_height/2],
@@ -72,12 +74,12 @@ def draw_diagram(mode, input_value, result_value):
         ax.add_patch(triangle)
         ax.text(pos1, center_y, "a", ha='center', va='center', fontsize=14)
 
-        # 四角形
-        rect = patches.Rectangle((pos2 - 40, center_y - 30), 80, 60, linewidth=1.5, edgecolor='black', facecolor='lightblue')
+        rect = patches.Rectangle((pos2 - 40, center_y - 30), 80, 60, linewidth=1.5,
+                                 edgecolor='black', facecolor='lightblue')
         ax.add_patch(rect)
         ax.text(pos2, center_y, "-3b", ha='center', va='center', fontsize=14)
 
-    # 矢印（長さ統一）
+    # 矢印
     arrow_props = dict(facecolor='black', shrink=0.05, width=1.2, headwidth=10)
     ax.annotate('', xy=(pos1 - 50, center_y), xytext=(pos_input + 50, center_y), arrowprops=arrow_props)
     ax.annotate('', xy=(pos2 - 50, center_y), xytext=(pos1 + 50, center_y), arrowprops=arrow_props)
@@ -87,21 +89,25 @@ def draw_diagram(mode, input_value, result_value):
     ax.text(pos_result, center_y, str(result_value), fontsize=14, ha='center', va='center')
 
     st.pyplot(fig)
+    plt.close(fig)  # ← メモリリーク防止のため明示的に閉じる
 
 # --- Streamlit UI ---
 
 st.title("図形と式の計算")
 
 # モード選択
-mode = st.radio("計算の順番", ["add_then_mul", "mul_then_add"], format_func=lambda x: "四角形→三角形" if x == "add_then_mul" else "三角形→四角形")
+mode = st.radio(
+    "計算の順番",
+    ["add_then_mul", "mul_then_add"],
+    format_func=lambda x: "四角形→三角形" if x == "add_then_mul" else "三角形→四角形"
+)
 
-# 入力
+# 入力値
 input_value = st.number_input("入れる数（整数のみ）", step=1, format="%d")
 
-# 計算
-res, err = calculate(str(input_value), mode)
+# 計算と表示
+res, err = calculate(input_value, mode)
 
-# 描画
 if err:
     st.error(err)
 elif res is not None:
